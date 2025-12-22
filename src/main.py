@@ -22,8 +22,50 @@ def main():
     except OSError as e:
         print(f"ErrorL {e}")
 
-    generate_page("content/index.md", "template.html", "public/index.html")
-    
+    generate_pages_recursive("content", "template.html", "public")
+    # generate_page("content/index.md", "template.html", "public/index.html")
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    content_root = Path(dir_path_content)
+    template_path = Path(template_path)
+    dest_root = Path(dest_dir_path)
+
+    with template_path.open("r", encoding="utf-8") as f:
+        template = f.read()
+
+    # Walk the content tree
+    for root, dirs, files in os.walk(content_root):
+        root_path = Path(root)
+
+        for filename in files:
+            if not filename.endswith(".md"):
+                continue
+
+            src_md_path = root_path / filename
+
+            # Compute relative path from content root, and mirror into dest_root
+            rel_path = src_md_path.relative_to(content_root)
+            dest_html_rel = rel_path.with_suffix(".html")
+            dest_html_path = dest_root / dest_html_rel
+
+            # Ensure destination directory exists
+            dest_html_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Read markdown
+            with src_md_path.open("r", encoding="utf-8") as f:
+                markdown = f.read()
+
+            # Convert markdown to HTML
+            html_node = markdown_to_html(markdown)
+            content_html = html_node.to_html()
+
+            # Inject into template
+            page_html = template.replace("{{ Content }}", content_html)
+
+            # Write output file
+            with dest_html_path.open("w", encoding="utf-8") as f:
+                f.write(page_html)
+
 def clear_public(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
@@ -73,7 +115,7 @@ def generate_page(from_path, template_path, dest_path):
         print("DEBUG: writing HTML:\n", page_html[:500])
         f.write(page_html)
 
-        
+
     # Write directly to dest_path (e.g. "public/index.html")
     with open(dest_path, "w") as f:
         f.write(page_html)

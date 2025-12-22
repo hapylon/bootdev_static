@@ -79,7 +79,8 @@ def is_ordered_list(md_block):
     lines = md_block.splitlines()
     expected_number = 1
     for line in lines:
-        match = re.match(r"^(\d+\.\s)", line.strip())
+        stripped = line.strip()
+        match = re.match(r"^(\d+)\.\s", stripped)
         if not match:
             return False
         actual_number = int(match.group(1))

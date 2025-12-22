@@ -1,6 +1,6 @@
 
 
-from blocks import BlockType, markdown_to_blocks, block_to_block_type, is_ordered_list
+from blocks import BlockType, markdown_to_blocks, block_to_block_type, strip_unord_list_lines, strip_ord_list_lines, strip_quote_lines
 from htmlnode import HTMLNode, LeafNode, ParentNode
 from text_to_textnodes import text_to_textnodes
 from textnode import TextNode
@@ -8,35 +8,89 @@ from textnode import TextNode
 def markdown_to_html(markdown_text):
     block_list = markdown_to_blocks(markdown_text)
     gd_children = []
-    grandaddy = HTMLNode(tag="div", children=gd_children)
+    
     for block in block_list:
         block_type = block_to_block_type(block)
         
         if block_type == BlockType.HEAD:
             num = 0
+            adjust = False
             for  i in range(0,7):
-                if i == "#":
+                if i >= len(block):
+                    break
+                if block[i] == "#":
                     num += 1 
+                elif block[i] != " ":
+                    adjust = True
+                    break
+                
             tag = block_tag(block_type, num)   
-        elif block_type == BlockType.CODE:
-            # SPECIAL HELPER TO NEST <pre> AND <code> TAGS --- AND WRAP LINES --- AND APPEND TO GD_CHILDREN
+            # header_child = LeafNode(tag="p", value=block[i:])
+            # html_block = ParentNode(tag=tag, children=header_child).to_html()
+            if adjust == True:
+                html_block = LeafNode(tag=tag, value=block[num:])
+            elif adjust == False:
+                html_block = LeafNode(tag=tag, value=block[num+1:])
+            gd_children.append(html_block)
             continue
+
+        elif block_type == BlockType.CODE:
+            tag = block_tag(block_type)
+            strip_block = block.splitlines()
+            if len(strip_block) <= 2:
+                clean_block = ""
+            else:
+                clean_block = strip_block[1:-1]
+            code_child = [LeafNode(tag, clean_block)]
+            html_block = ParentNode(tag="pre", children=code_child)
+            gd_children.append(html_block)
+            continue
+
+        elif block_type == BlockType.UNORD:
+            tag = block_tag(block_type)
+            list_nodes = strip_unord_list_lines(block)
+            
+            list_children = []
+            for item in list_nodes:
+                item_nodes = text_to_children(item)
+                list_child = ParentNode(tag="li", children=item_nodes)
+                list_children.append(list_child)
+            html_block = ParentNode(tag=tag, children = list_children)
+            gd_children.append(html_block)
+            continue
+
+        elif block_type == BlockType.ORD:
+            tag = block_tag(block_type)
+            list_nodes = strip_ord_list_lines(block)
+            list_children = []
+            for item in list_nodes:
+                item_nodes = text_to_children(item)
+                list_child = ParentNode(tag="li", children=item_nodes)
+                list_children.append(list_child)
+            html_block = ParentNode(tag=tag, children = list_children)
+            gd_children.append(html_block)
+            continue
+        
+        elif block_type == BlockType.QUOTE:
+            tag = block_tag(block_type)
+            list_nodes = strip_quote_lines(block)
+            list_children = []
+            for item in list_nodes:
+                item_nodes = text_to_children(item)
+                list_children.extend(item_nodes)
+            html_block = ParentNode(tag=tag, children = list_children)
+            gd_children.append(html_block)
+            continue
+
         else:
             tag = block_tag(block_type)
+            list_children = text_to_children(block)
+            html_block = ParentNode(tag=tag, children=list_children)
+            gd_children.append(html_block)
+            continue
         
-        value = None
-        children = text_to_children(block)
-        props = None
-        
-
-
-        if not value or value == None: 
-            html_block = ParentNode(tag, children, props)
-        if not children or children == None:
-            html_block = LeafNode(tag, value, props)
-        
-        gd_children.append(html_block)
-
+       
+    grandaddy = ParentNode(tag="div", children=gd_children)
     return grandaddy
 
 

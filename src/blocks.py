@@ -11,6 +11,48 @@ def markdown_to_blocks(markdown):
         stripped_blocks.append(stripped)
     return stripped_blocks
 
+# def wrap_list_lines(markdown):
+#     lines = markdown.split("\n")
+#     wrapped_lines = []
+#     for i in lines:
+#         stripped = i.strip()
+#         wrapped_lines.append("<li>" + stripped + "</li>")
+#     return wrapped_lines
+
+def strip_unord_list_lines(markdown):
+    lines = markdown.split("\n")
+    wrapped_lines = []
+    for i in lines:
+        stripped = i.strip()
+        pattern = r"^- "
+        stripped = re.sub(pattern, "", stripped)
+        wrapped_lines.append(stripped)
+    return wrapped_lines
+
+def strip_ord_list_lines(markdown):
+    lines = markdown.split("\n")
+    stripped_lines = []
+    for i in lines:
+        stripped = i.strip()
+        pattern = r"^\d+\. "
+        stripped = re.sub(pattern, "", stripped)
+        # if stripped == "":
+        #     continue
+        stripped_lines.append(stripped)
+    return stripped_lines
+
+def strip_quote_lines(markdown):
+    lines = markdown.split("\n")
+    stripped_lines = []
+    for i in lines:
+        stripped = i.strip()
+        pattern = r"^> "
+        stripped = re.sub(pattern, "", stripped)
+        # if stripped == "":
+        #     continue
+        stripped_lines.append(stripped)
+    return stripped_lines
+
 class BlockType(Enum):
     PARA = "paragraph"
     HEAD = "heading"

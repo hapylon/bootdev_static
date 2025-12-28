@@ -13,11 +13,11 @@ def main():
     # If an argument is provided, use it, otherwise default to "/"
     basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
 
-    path_to_clear = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/public"
+    path_to_clear = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/docs"
     clear_public(path_to_clear)
 
     source_dir = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/static/"
-    dest_dir = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/public/"
+    dest_dir = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/docs/"
     try:
         shutil.copytree(source_dir, dest_dir, dirs_exist_ok=True)
         print(f'Directory {source_dir} successfully copied to {dest_dir}')
@@ -26,7 +26,7 @@ def main():
     except OSError as e:
         print(f"ErrorL {e}")
     
-    generate_pages_recursive("content", "template.html", "public", basepath)
+    generate_pages_recursive("content", "template.html", "docs", basepath)
     # generate_page("content/index.md", "template.html", "public/index.html")
 
 def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):

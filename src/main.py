@@ -1,5 +1,6 @@
 import markdown_to_html
 import os
+import sys
 from pathlib import Path
 import re
 import shutil
@@ -9,6 +10,9 @@ from test_markdown import test_text
 
 
 def main():
+    # If an argument is provided, use it, otherwise default to "/"
+    basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
+
     path_to_clear = "/mnt/c/Users/JohnC/github/bootdotdev/static/bootdev_static/public"
     clear_public(path_to_clear)
 
@@ -21,19 +25,14 @@ def main():
         print(f"Error: Destination directory {dest_dir} already exists!")
     except OSError as e:
         print(f"ErrorL {e}")
-
-    generate_pages_recursive("content", "template.html", "public")
+    
+    generate_pages_recursive("content", "template.html", "public", basepath)
     # generate_page("content/index.md", "template.html", "public/index.html")
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     content_root = Path(dir_path_content)
-    template_path = Path(template_path)
     dest_root = Path(dest_dir_path)
 
-    with template_path.open("r", encoding="utf-8") as f:
-        template = f.read()
-
-    # Walk the content tree
     for root, dirs, files in os.walk(content_root):
         root_path = Path(root)
 
@@ -42,29 +41,53 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
                 continue
 
             src_md_path = root_path / filename
-
-            # Compute relative path from content root, and mirror into dest_root
             rel_path = src_md_path.relative_to(content_root)
             dest_html_rel = rel_path.with_suffix(".html")
             dest_html_path = dest_root / dest_html_rel
 
-            # Ensure destination directory exists
-            dest_html_path.parent.mkdir(parents=True, exist_ok=True)
+            # Call generate_page for each markdown file
+            generate_page(src_md_path, template_path, dest_html_path, basepath)
+            
+# def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
+#     content_root = Path(dir_path_content)
+#     template_path = Path(template_path)
+#     dest_root = Path(dest_dir_path)
 
-            # Read markdown
-            with src_md_path.open("r", encoding="utf-8") as f:
-                markdown = f.read()
+#     with template_path.open("r", encoding="utf-8") as f:
+#         template = f.read()
 
-            # Convert markdown to HTML
-            html_node = markdown_to_html(markdown)
-            content_html = html_node.to_html()
+#     # Walk the content tree
+#     for root, dirs, files in os.walk(content_root):
+#         root_path = Path(root)
 
-            # Inject into template
-            page_html = template.replace("{{ Content }}", content_html)
+#         for filename in files:
+#             if not filename.endswith(".md"):
+#                 continue
 
-            # Write output file
-            with dest_html_path.open("w", encoding="utf-8") as f:
-                f.write(page_html)
+#             src_md_path = root_path / filename
+
+#             # Compute relative path from content root, and mirror into dest_root
+#             rel_path = src_md_path.relative_to(content_root)
+#             dest_html_rel = rel_path.with_suffix(".html")
+#             dest_html_path = dest_root / dest_html_rel
+
+#             # Ensure destination directory exists
+#             dest_html_path.parent.mkdir(parents=True, exist_ok=True)
+
+#             # Read markdown
+#             with src_md_path.open("r", encoding="utf-8") as f:
+#                 markdown = f.read()
+
+#             # Convert markdown to HTML
+#             html_node = markdown_to_html(markdown)
+#             content_html = html_node.to_html()
+
+#             # Inject into template
+#             page_html = template.replace("{{ Content }}", content_html)
+
+#             # Write output file
+#             with dest_html_path.open("w", encoding="utf-8") as f:
+#                 f.write(page_html)
 
 def clear_public(folder_path):
     for filename in os.listdir(folder_path):
@@ -91,7 +114,7 @@ def extract_title(markdown):
     else:
         return title.strip()
     
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     # md_file = find_ext_files(from_path, "md")
@@ -100,6 +123,7 @@ def generate_page(from_path, template_path, dest_path):
         src_md = file.read()
     with open(template_path, 'r') as file:
         template = file.read()
+    
     html_content = markdown_to_html(src_md).to_html()
     title = extract_title(src_md)
 
@@ -110,7 +134,10 @@ def generate_page(from_path, template_path, dest_path):
     # Ensure parent directory exists
     dest_dir = os.path.dirname(dest_path)
     os.makedirs(dest_dir, exist_ok=True)
-
+    
+    page_html = page_html.replace('href="/', f'href="{basepath}')
+    page_html = page_html.replace('src="/', f'src="{basepath}')
+    
     with open(dest_path, "w") as f:
         print("DEBUG: writing HTML:\n", page_html[:500])
         f.write(page_html)
